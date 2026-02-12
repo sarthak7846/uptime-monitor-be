@@ -3,7 +3,6 @@ import { Cron } from '@nestjs/schedule';
 import { NotificationEventOutbox } from '@prisma/client';
 import { EmailService } from 'src/email/email.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { NotificationEvent } from 'src/shared/events/notification-event.types';
 
 @Injectable()
 export class EmailNotificationWorker {
@@ -14,10 +13,6 @@ export class EmailNotificationWorker {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
   ) {}
-
-  //   handleCron() {
-  //     this.logger.log('Running every second');
-  //   }
 
   @Cron('*/10 * * * * *')
   async process() {
@@ -34,7 +29,7 @@ export class EmailNotificationWorker {
   }
 
   private async handleEvent(event: NotificationEventOutbox) {
-    const payload = event.payload as unknown as NotificationEvent;
+    const payload = JSON.parse(event.payload as any);
 
     const rules = await this.prisma.notificationRule.findMany({
       where: {
@@ -51,15 +46,13 @@ export class EmailNotificationWorker {
 
     for (const rule of rules) {
       // Send email
-      console.log('rule', rule);
+      const email = (rule?.endpoint?.config as any).email ?? 'sarthakbehera10@gmail.com'
 
-      const res = this.emailService.sendEmail({
-        to: ['sarthakbehera09@gmail.com'],
+      await this.emailService.sendEmail({
+        to: [email],
         html: '<p>Congrats on sending your <strong>first email</strong>!</p>',
         subject: 'Uptime Monitor Notification',
       });
-
-      console.log('res', res);
     }
 
     //Update outbox state
