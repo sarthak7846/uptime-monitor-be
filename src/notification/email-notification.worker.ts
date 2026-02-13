@@ -51,7 +51,7 @@ export class EmailNotificationWorker {
       await this.emailService.sendEmail({
         to: [email],
         html: '<p>Congrats on sending your <strong>first email</strong>!</p>',
-        subject: 'Uptime Monitor Notification',
+        subject: `Uptime Monitor Incident Notification - MONITOR ${event.type}`,
       });
     }
 

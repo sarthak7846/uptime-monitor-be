@@ -115,7 +115,16 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
   private async resolveIncident(monitorId: string) {
     console.log('Incident resolved', monitorId);
 
-    return this.prisma.incident.updateMany({
+    // First, fetch the open incidents before resolving them
+    const openIncidents = await this.prisma.incident.findMany({
+      where: {
+        monitorId,
+        status: 'OPEN',
+      },
+    });
+
+    // Then resolve them
+    await this.prisma.incident.updateMany({
       where: {
         monitorId,
         status: 'OPEN',
@@ -125,6 +134,9 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
         endedAt: new Date(),
       },
     });
+
+    // Return the resolved incidents
+    return openIncidents;
   }
 
   private async processJob(job: any) {
@@ -244,35 +256,27 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
 
     if (shouldResolveIncident) {
       const resolvedIncidents = await this.resolveIncident(monitorId);
-      // Note: resolveIncident returns updateMany result, so you may need to fetch the incident
-      // For now, using monitorId as incidentId placeholder - you may need to adjust this
-      // const openIncidents = await this.prisma.incident.findMany({
-      //   where: {
-      //     monitorId,
-      //     status: 'OPEN',
-      //   },
-      //   orderBy: { startedAt: 'desc' },
-      //   take: 1,
-      // });
 
-      // if (openIncidents.length > 0) {
-      //   const resolvedIncident = openIncidents[0];
-      //   await this.notificationService.emitNotification({
-      //     id: resolvedIncident.id,
-      //     type: NotificationEventType.MONITOR_UP,
-      //     userId: monitor.userId,
-      //     monitorId: monitor.id,
-      //     incidentId: resolvedIncident.id,
-      //     occurredAt: new Date(),
-      //     data: {
-      //       monitorName: monitor.name || monitor.url,
-      //       url: monitor.url,
-      //       currentStatus: 'UP',
-      //       previousStatus: 'DOWN',
-      //       responseTime: probeResult.responseMs,
-      //     },
-      //   });
-      // }
+      // Handle multiple resolved incidents (though typically there should be only one)
+      for (const incident of resolvedIncidents) {
+        await this.notificationService.emitNotification({
+          id: incident.id,
+          type: NotificationEventType.MONITOR_UP,
+          userId: monitor.userId,
+          monitorId: monitor.id,
+          incidentId: incident.id,
+          occurredAt: new Date(),
+          data: {
+            monitorName: monitor.name || monitor.url,
+            url: monitor.url,
+            currentStatus: 'UP',
+            previousStatus: monitor.lastStatus as 'UP' | 'DOWN',
+            responseTime: probeResult.responseMs,
+          },
+        });
+      }
+
+      this.logger.log(`Emitted resolve incident notification for ${resolvedIncidents.length} incident(s)`);
     }
 
     console.log(`${monitor.url} ${nextStatus} (${probeResult.responseMs}ms)`);
