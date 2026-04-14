@@ -84,7 +84,7 @@ model MonitorLog {
   reason     String?
   createdAt  DateTime     @default(now())
 
-  monitor Monitor @relation(fields: [monitorId], references: [id])
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 }
 
 model Incident {
@@ -95,7 +95,7 @@ model Incident {
   status        IncidentState
   triggerReason String
 
-  monitor Monitor @relation(fields: [monitorId], references: [id])
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 }
 
 model NotificationEndpoint {
