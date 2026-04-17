@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateMonitorDto } from './create-monitor.dto';
 import { UpdateMonitorDto } from './update-monitor.dto';
@@ -6,7 +6,11 @@ import { monitorQueue } from 'src/queue/queue.config';
 
 @Injectable()
 export class MonitorService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MonitorService.name, {
+    timestamp: true,
+  });
+
+  constructor(private readonly prisma: PrismaService) { }
 
   async getAllMonitors() {
     const res = await this.prisma.monitor.findMany();
@@ -14,26 +18,33 @@ export class MonitorService {
   }
 
   async createMonitor(createMonitorDto: CreateMonitorDto, userId: string) {
-    const res = await this.prisma.monitor.create({
-      data: { ...createMonitorDto, userId },
-    });
+    try {
+      const res = await this.prisma.monitor.create({
+        data: { ...createMonitorDto, userId },
+      });
 
-    // Enqueue first check
-    await monitorQueue.add(
-      'check-monitor',
-      {
-        monitorId: res.id,
-      },
-      {
-        repeat: {
-          every: createMonitorDto.interval,
+      // Enqueue first check
+      await monitorQueue.add(
+        'check-monitor',
+        {
+          monitorId: res.id,
         },
-        removeOnComplete: true,
-        removeOnFail: 100,
-      },
-    );
+        {
+          repeat: {
+            every: createMonitorDto.interval,
+          },
+          removeOnComplete: true,
+          removeOnFail: 100,
+        },
+      );
 
-    return res;
+      this.logger.log('Monitor created successfully', this.createMonitor.name);
+
+      return res;
+    } catch (error) {
+      this.logger.error('Failed to create monitor', error);
+      throw error;
+    }
   }
 
   async updateMonitor(id: string, updateMonitorDto: UpdateMonitorDto) {

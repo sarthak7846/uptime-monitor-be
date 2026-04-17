@@ -11,7 +11,7 @@ async function bootstrap() {
   const port = process.env.PORT ?? 8000;
 
   // Global validation for each route handler
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({transform: true}));
 
   await app.listen(port, () => {
     console.log(`Application running on http://localhost:${port}`);
