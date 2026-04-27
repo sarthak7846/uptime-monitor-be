@@ -42,6 +42,7 @@ export class MonitorService {
           monitorId: res.id,
         },
         {
+          jobId: `monitor:${res.id}`,
           repeat: {
             every: createMonitorDto.interval,
           },
