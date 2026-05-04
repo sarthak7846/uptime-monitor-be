@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { ProbeResult } from './interfaces/probe-result.interface';
 import { NotificationEventType } from 'src/shared/events/notification-event.types';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
@@ -23,6 +24,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly redisService: RedisService
   ) {}
 
   async onModuleInit() {
@@ -174,7 +176,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     let shouldStartIncident = false;
     let shouldResolveIncident = false;
 
-    console.log('probe result', probeResult);
+    // console.log('probe result', probeResult);
 
     // Probe is healthy
     if (isHealthy) {
@@ -210,6 +212,8 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
       }
     }
 
+    const statusChanged = monitor.lastStatus !== nextStatus;
+
     await Promise.all([
       this.prisma.monitor.update({
         where: { id: monitorId },
@@ -228,7 +232,15 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
           reason: probeResult.reason,
         },
       }),
+      this.redisService.pub.publish(`monitor-updates:${monitor.userId}`, JSON.stringify({
+        monitorId,
+        status: nextStatus
+      }))
     ]);
+
+    // if(statusChanged) {
+
+    // }
 
     //Incident start/resolve operation
     if (shouldStartIncident) {
