@@ -90,20 +90,9 @@ export class MonitorController {
     return res;
   }
 
-  @Public()
   @Sse('sse/events')
-  sse(@Req() req) {
-    // const user = req.user.id;
-
-    // console.log('user in sse', user)
-
-    return interval(1000).pipe(
-      map(() => ({
-        data: { message: 'hello' },
-      })),
-    );
-
-    // return this.monitorStream.getStream(userId)?.pipe(map((data) => ({ data })))
-
+  sse(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.monitorStream.getStream(userId)?.pipe(map((data) => ({ data })))
   }
 }

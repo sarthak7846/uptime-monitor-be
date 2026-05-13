@@ -12,9 +12,10 @@ export class MonitorSubscriberService implements OnModuleInit {
     async onModuleInit() {
         await this.redis.sub.psubscribe('monitor-updates:*');
 
-        this.redis.sub.on('pmessage', (pattern, channel, message) => {
+        this.redis.sub.on('pmessage', (_, channel, message) => {
+            const userId = channel.split(':')[1];
             const data = JSON.parse(message);
-            this.monitorStream.emit(data);
+            this.monitorStream.emit(data, userId);
         })
     }
 }

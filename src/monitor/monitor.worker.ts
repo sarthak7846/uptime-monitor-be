@@ -232,15 +232,15 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
           reason: probeResult.reason,
         },
       }),
-      this.redisService.pub.publish(`monitor-updates:${monitor.userId}`, JSON.stringify({
+      
+    ]);
+
+    if(statusChanged) {
+      await this.redisService.pub.publish(`monitor-updates:${monitor.userId}`, JSON.stringify({
         monitorId,
         status: nextStatus
       }))
-    ]);
-
-    // if(statusChanged) {
-
-    // }
+    }
 
     //Incident start/resolve operation
     if (shouldStartIncident) {

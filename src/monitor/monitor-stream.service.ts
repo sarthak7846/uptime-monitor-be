@@ -10,8 +10,9 @@ export class MonitorStreamService {
         return this.subjects.get(userId)?.asObservable();
     }
 
-    emit(event: any) {
-        const subject = this.subjects.get(event.userId);
+    emit(event: any, userId: string) {
+        console.log('got an event to emit', event)
+        const subject = this.subjects.get(userId);
         if(subject) subject.next(event);
     }
 
