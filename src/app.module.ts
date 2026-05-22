@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { NotificationModule } from './notification/notification.module';
 import { EmailModule } from './email/email.module';
+import { IncidentModule } from './incident/incident.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EmailModule } from './email/email.module';
     AuthModule,
     NotificationModule,
     EmailModule,
+    IncidentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

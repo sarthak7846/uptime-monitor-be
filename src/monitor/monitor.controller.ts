@@ -14,8 +14,7 @@ import { MonitorService } from './monitor.service';
 import { CreateMonitorDto } from './create-monitor.dto';
 import { UpdateMonitorDto } from './update-monitor.dto';
 import type { AuthenticatedRequest } from 'src/types/express';
-import { Public } from 'src/auth/public.decorator';
-import { interval, map } from 'rxjs';
+import { map } from 'rxjs';
 import { MonitorStreamService } from './monitor-stream.service';
 
 @Controller('monitor')
