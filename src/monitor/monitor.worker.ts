@@ -25,7 +25,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
     private readonly redisService: RedisService
-  ) {}
+  ) { }
 
   async onModuleInit() {
     this.worker = new Worker(
@@ -117,28 +117,27 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
   private async resolveIncident(monitorId: string) {
     console.log('Incident resolved', monitorId);
 
-    // First, fetch the open incidents before resolving them
     const openIncidents = await this.prisma.incident.findMany({
-      where: {
-        monitorId,
-        status: 'OPEN',
-      },
+      where: { monitorId, status: 'OPEN' },
     });
 
-    // Then resolve them
+    if (openIncidents.length === 0) {
+      return [];
+    }
+    const endedAt = new Date();
     await this.prisma.incident.updateMany({
-      where: {
-        monitorId,
-        status: 'OPEN',
-      },
+      where: { monitorId, status: 'OPEN' },
       data: {
         status: 'RESOLVED',
-        endedAt: new Date(),
+        endedAt,
       },
     });
 
-    // Return the resolved incidents
-    return openIncidents;
+    return openIncidents.map((incident) => ({
+      ...incident,
+      status: 'RESOLVED' as const,
+      endedAt,
+    }));
   }
 
   private async processJob(job: any) {
@@ -232,11 +231,12 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
           reason: probeResult.reason,
         },
       }),
-      
+
     ]);
 
-    if(statusChanged) {
-      await this.redisService.pub.publish(`monitor-updates:${monitor.userId}`, JSON.stringify({
+    if (statusChanged) {
+      this.redisService.pub.publish(`sse-update:${monitor.userId}`, JSON.stringify({
+        type: 'monitor.status',
         monitorId,
         status: nextStatus
       }))
@@ -245,6 +245,11 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     //Incident start/resolve operation
     if (shouldStartIncident) {
       const incident = await this.startIncident(monitorId, probeResult.reason);
+
+      this.redisService.pub.publish(`sse-update:${monitor.userId}`, JSON.stringify({
+        type: 'incident.created',
+        ...incident
+      }))
 
       await this.notificationService.emitNotification({
         id: incident.id,
@@ -271,6 +276,11 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
 
       // Handle multiple resolved incidents (though typically there should be only one)
       for (const incident of resolvedIncidents) {
+        this.redisService.pub.publish(`sse-update:${monitor.userId}`, JSON.stringify({
+          type: 'incident.resolved',
+          ...incident
+        }))
+
         await this.notificationService.emitNotification({
           id: incident.id,
           type: NotificationEventType.MONITOR_UP,
@@ -291,6 +301,6 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Emitted resolve incident notification for ${resolvedIncidents.length} incident(s)`);
     }
 
-    console.log(`${monitor.url} ${nextStatus} (${probeResult.responseMs}ms)`);
+    console.log(`${monitor.url} current status = ${nextStatus} (${probeResult.responseMs}ms)`);
   }
 }

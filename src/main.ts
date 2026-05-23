@@ -9,7 +9,7 @@ async function bootstrap() {
       colors: false,
     }),
   });
-  const port = process.env.PORT ?? 8000;
+  const port = process.env.PORT ?? 8001;
 
   // Global validation for each route handler
   app.useGlobalPipes(new ValidationPipe({transform: true}));

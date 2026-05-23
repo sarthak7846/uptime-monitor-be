@@ -23,10 +23,10 @@ export class ResendEmailProvider {
       from: 'Acme <onboarding@resend.dev>',
       to,
       subject,
-      html: '<strong>It works!</strong>',
+      html
     });
 
     console.log('email sent', data);
-    console.log('email not sent', error);
+    if(error) console.log('email not sent', error);
   }
 }
