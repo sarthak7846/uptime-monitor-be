@@ -18,6 +18,7 @@ async function bootstrap() {
     credentials: true
   });
   app.use(cookieParser());
+  app.enableShutdownHooks();
   
   await app.listen(port, () => {
     console.log(`Application running on http://localhost:${port}`);

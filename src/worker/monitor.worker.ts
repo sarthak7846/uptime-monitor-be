@@ -10,7 +10,7 @@ import axios from 'axios';
 import { Monitor } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationService } from 'src/notification/notification.service';
-import { ProbeResult } from './interfaces/probe-result.interface';
+import { ProbeResult } from '../monitor/interfaces/probe-result.interface';
 import { NotificationEventType } from 'src/shared/events/notification-event.types';
 import { RedisService } from 'src/redis/redis.service';
 
@@ -34,7 +34,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
         await this.processJob(job);
       },
       {
-        connection: { host: 'localhost', port: 6379 },
+        connection: this.redisService.bullmq,
       },
     );
     this.logger.log('Monitor worker started running');

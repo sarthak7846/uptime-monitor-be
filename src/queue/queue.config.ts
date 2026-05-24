@@ -1,8 +1,6 @@
 import { Queue } from 'bullmq';
+import { getRedisConnectionOptions } from 'src/redis/redis.config';
 
 export const monitorQueue = new Queue('monitor-check', {
-  connection: {
-    host: 'localhost',
-    port: 6379,
-  },
+  connection: getRedisConnectionOptions(),
 });
