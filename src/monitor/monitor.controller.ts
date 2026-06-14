@@ -70,7 +70,7 @@ export class MonitorController {
   }
 
   @Sse('sse/events')
-  sse(@Req() req: any) {
+  sse(@Req() req: AuthenticatedRequest) {
     const userId = req.user.sub;
     return this.monitorStream.getStream(userId)?.pipe(map((data) => ({ data })));
   }

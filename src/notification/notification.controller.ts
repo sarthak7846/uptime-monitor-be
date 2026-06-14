@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationEndpointDto, CreateNotificationRuleDto } from './notification.dto';
 import type { AuthenticatedRequest } from 'src/types/express';
@@ -34,6 +34,15 @@ export class NotificationController {
   @Get('rules')
   async getNotificationRules(@Req() request: AuthenticatedRequest) {
     const userId = request.user.sub;
-    return await this.notificationService.getNotificationRules(userId);
+    return await this.notificationService.getNotificationRules({ userId });
+  }
+
+  @Get('rules/:endpointId')
+  async getRulesOfEndpoint(
+    @Req() request: AuthenticatedRequest,
+    @Param('endpointId') endpointId: string,
+  ) {
+    const userId = request.user.sub;
+    return await this.notificationService.getRulesOfEndpoint(userId, endpointId);
   }
 }

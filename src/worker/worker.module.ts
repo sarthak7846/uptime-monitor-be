@@ -4,9 +4,10 @@ import { MonitorWorker } from 'src/worker/monitor.worker';
 import { NotificationModule } from 'src/notification/notification.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { RedisModule } from 'src/redis/redis.module';
+import { NotificationWorker } from './notification.worker';
 
 @Module({
   imports: [ConfigModule.forRoot(), PrismaModule, NotificationModule, RedisModule],
-  providers: [MonitorWorker],
+  providers: [MonitorWorker, NotificationWorker],
 })
 export class WorkerModule {}

@@ -27,7 +27,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     private readonly redisService: RedisService,
   ) {}
 
-  async onModuleInit() {
+  onModuleInit() {
     this.worker = new Worker(
       'monitor-check',
       async (job) => {
@@ -136,8 +136,8 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     }));
   }
 
-  private async processJob(job: any) {
-    console.log('Running job', job.data);
+  private async processJob(job: { data: { monitorId: string } }) {
+    // console.log('Running job', job.data);
 
     const { monitorId } = job.data;
 
@@ -230,7 +230,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     ]);
 
     if (statusChanged) {
-      this.redisService.pub.publish(
+      void this.redisService.pub.publish(
         `sse-update:${monitor.userId}`,
         JSON.stringify({
           type: 'monitor.status',
@@ -307,6 +307,6 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    console.log(`${monitor.url} current status = ${nextStatus} (${probeResult.responseMs}ms)`);
+    // console.log(`${monitor.url} current status = ${nextStatus} (${probeResult.responseMs}ms)`);
   }
 }

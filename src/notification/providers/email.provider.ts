@@ -1,79 +1,34 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import { NotificationEventOutbox } from '@prisma/client';
+import { NotificationEndpoint, NotificationRule } from '@prisma/client';
 import { EmailService } from 'src/email/email.service';
-import { PrismaService } from 'src/prisma/prisma.service';
 import {
   NotificationEvent,
   NotificationEventType,
 } from 'src/shared/events/notification-event.types';
 
 @Injectable()
-export class EmailNotificationWorker {
-  private readonly logger = new Logger(EmailNotificationWorker.name, {
+export class EmailProvider {
+  private readonly logger = new Logger(EmailProvider.name, {
     timestamp: true,
   });
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly emailService: EmailService,
-  ) {}
+  constructor(private readonly emailService: EmailService) {}
 
-  // @Cron('*/10 * * * * *')
-  async process() {
-    this.logger.log('Finding pending notification events in outbox');
-    const events = await this.prisma.notificationEventOutbox.findMany({
-      where: { status: 'PENDING' },
-      take: 10,
-    });
-    this.logger.log('Pending notification events in outbox', events);
-
-    for (const event of events) {
-      await this.handleEvent(event);
-    }
-  }
-
-  private async handleEvent(event: NotificationEventOutbox) {
-    const payload = JSON.parse(event.payload as string) as NotificationEvent;
-
-    const rules = await this.prisma.notificationRule.findMany({
-      where: {
-        userId: payload.userId,
-        enabled: true,
-        events: { has: payload.type },
-        OR: [{ monitorId: payload.monitorId }, { monitorId: null }],
-        endpoint: { channel: 'EMAIL' },
-      },
-      include: {
-        endpoint: true,
-      },
-    });
-
+  async handleEmailRule(
+    rule: NotificationRule & { endpoint: NotificationEndpoint },
+    payload: NotificationEvent,
+  ) {
     const { subject, html } = this.buildEmailContent(payload);
-
-    for (const rule of rules) {
-      const email = (rule?.endpoint?.config as { email?: string }).email;
-      if (!email) {
-        this.logger.warn(`Skipping rule ${rule.id}: EMAIL endpoint missing config.email`);
-        continue;
-      }
-
-      await this.emailService.sendEmail({
-        to: [email],
-        html,
-        subject,
-      });
+    const email = (rule?.endpoint?.config as { email?: string }).email;
+    if (!email) {
+      this.logger.warn(`Skipping rule ${rule.id}: EMAIL endpoint missing config.email`);
+      return;
     }
 
-    //Update outbox state
-    await this.prisma.notificationEventOutbox.update({
-      where: { id: event.id },
-      data: {
-        status: 'PROCESSED',
-        processedAt: new Date(),
-      },
+    await this.emailService.sendEmail({
+      to: [email],
+      html,
+      subject,
     });
-
-    this.logger.log('Updated outbox state to PROCESSED');
   }
 
   private buildEmailContent(payload: NotificationEvent): {
