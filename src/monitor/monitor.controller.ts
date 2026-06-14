@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-  Req,
-  Sse,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Sse } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
 import { CreateMonitorDto } from './create-monitor.dto';
 import { UpdateMonitorDto } from './update-monitor.dto';
@@ -19,8 +8,9 @@ import { MonitorStreamService } from './monitor-stream.service';
 
 @Controller('monitor')
 export class MonitorController {
-  constructor(private readonly monitorService: MonitorService,
-    private readonly monitorStream: MonitorStreamService
+  constructor(
+    private readonly monitorService: MonitorService,
+    private readonly monitorStream: MonitorStreamService,
   ) {}
 
   @Get('/all')
@@ -35,18 +25,12 @@ export class MonitorController {
     @Req() request: AuthenticatedRequest,
   ) {
     const userId = request.user.sub;
-    const res = await this.monitorService.createMonitor(
-      createMonitorDto,
-      userId,
-    );
+    const res = await this.monitorService.createMonitor(createMonitorDto, userId);
     return res;
   }
 
   @Patch(':id')
-  async updateMonitor(
-    @Param('id') id: string,
-    @Body() updateMonitorDto: UpdateMonitorDto,
-  ) {
+  async updateMonitor(@Param('id') id: string, @Body() updateMonitorDto: UpdateMonitorDto) {
     const res = await this.monitorService.updateMonitor(id, updateMonitorDto);
     return res;
   }
@@ -75,11 +59,7 @@ export class MonitorController {
     @Query('from') from: string,
     @Query('to') to: string,
   ) {
-    const res = await this.monitorService.getUptimeDataOfMonitor(
-      monitorId,
-      from,
-      to,
-    );
+    const res = await this.monitorService.getUptimeDataOfMonitor(monitorId, from, to);
     return res;
   }
 
@@ -92,6 +72,6 @@ export class MonitorController {
   @Sse('sse/events')
   sse(@Req() req: any) {
     const userId = req.user.sub;
-    return this.monitorStream.getStream(userId)?.pipe(map((data) => ({ data })))
+    return this.monitorStream.getStream(userId)?.pipe(map((data) => ({ data })));
   }
 }

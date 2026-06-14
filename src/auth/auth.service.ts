@@ -29,10 +29,7 @@ export class AuthService {
       });
 
       if (user) {
-        const isPasswordValid = bcrypt.compare(
-          loginDto.password,
-          user.password,
-        );
+        const isPasswordValid = bcrypt.compare(loginDto.password, user.password);
 
         if (!isPasswordValid) {
           throw new UnauthorizedException('Invalid credentials');

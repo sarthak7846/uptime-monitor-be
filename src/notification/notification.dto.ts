@@ -1,13 +1,5 @@
 import { NotificationChannel } from '@prisma/client';
-import {
-  IsArray,
-  IsBoolean,
-  IsEnum,
-  IsIn,
-  IsObject,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsIn, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateNotificationEndpointDto {
   @IsEnum(['EMAIL', 'SLACK', 'WEBHOOK'])

@@ -12,16 +12,16 @@ async function bootstrap() {
   const port = process.env.PORT ?? 8001;
 
   // Global validation for each route handler
-  app.useGlobalPipes(new ValidationPipe({transform: true}));
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.enableCors({
     origin: 'http://localhost:3000',
-    credentials: true
+    credentials: true,
   });
   app.use(cookieParser());
   app.enableShutdownHooks();
-  
+
   await app.listen(port, () => {
     console.log(`Application running on http://localhost:${port}`);
   });
 }
-bootstrap();
+void bootstrap();

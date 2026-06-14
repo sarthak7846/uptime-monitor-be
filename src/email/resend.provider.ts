@@ -10,23 +10,15 @@ export class ResendEmailProvider {
     this.resend = new Resend(apiKey);
   }
 
-  async send({
-    to,
-    subject,
-    html,
-  }: {
-    to: string[];
-    subject: string;
-    html: string;
-  }) {
+  async send({ to, subject, html }: { to: string[]; subject: string; html: string }) {
     const { data, error } = await this.resend.emails.send({
       from: 'Acme <onboarding@resend.dev>',
       to,
       subject,
-      html
+      html,
     });
 
     console.log('email sent', data);
-    if(error) console.log('email not sent', error);
+    if (error) console.log('email not sent', error);
   }
 }

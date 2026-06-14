@@ -10,7 +10,7 @@ export class NotificationService {
   });
 
   constructor(private readonly prisma: PrismaService) {}
-  async emitNotification(event: NotificationEvent) {    
+  async emitNotification(event: NotificationEvent) {
     await this.prisma.notificationEventOutbox.create({
       data: {
         userId: event.userId,
@@ -26,9 +26,9 @@ export class NotificationService {
       data: {
         userId,
         channel: createDto.channel,
-        config: createDto.config
-      }
-    })
+        config: createDto.config,
+      },
+    });
   }
 
   async createNotificationRule(createDto: CreateNotificationRuleDto, userId: string) {
@@ -38,26 +38,26 @@ export class NotificationService {
         endpointId: createDto.endpointId,
         monitorId: createDto.monitorId || null,
         events: createDto.events,
-        enabled: createDto.enabled ?? true
-      }
-    })
+        enabled: createDto.enabled ?? true,
+      },
+    });
   }
 
   async getNotificationEndpoints(userId: string) {
     return this.prisma.notificationEndpoint.findMany({
-      where: {userId},
+      where: { userId },
       include: {
-        rules: true
-      }
-    })
+        rules: true,
+      },
+    });
   }
 
   async getNotificationRules(userId: string) {
     return this.prisma.notificationRule.findMany({
-      where: {userId},
+      where: { userId },
       include: {
-        endpoint: true
-      }
-    })
+        endpoint: true,
+      },
+    });
   }
 }

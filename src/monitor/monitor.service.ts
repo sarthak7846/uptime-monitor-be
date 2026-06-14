@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateMonitorDto } from './create-monitor.dto';
 import { UpdateMonitorDto } from './update-monitor.dto';
@@ -16,7 +10,7 @@ export class MonitorService {
     timestamp: true,
   });
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async getAllMonitors() {
     try {
@@ -73,9 +67,7 @@ export class MonitorService {
 
         console.log('existing jobs', JSON.stringify(schedulers, null, 2));
 
-        const scheduler = schedulers.find(
-          (s) => s.template?.data.monitorId === monitor.id,
-        );
+        const scheduler = schedulers.find((s) => s.template?.data.monitorId === monitor.id);
 
         if (scheduler) {
           await monitorQueue.removeJobScheduler(scheduler.key);
@@ -119,10 +111,7 @@ export class MonitorService {
       });
 
       if (!existingMonitor) {
-        this.logger.warn(
-          `Delete failed, monitor not found: ${id}`,
-          this.deleteMonitor.name,
-        );
+        this.logger.warn(`Delete failed, monitor not found: ${id}`, this.deleteMonitor.name);
         throw new NotFoundException('Monitor not found');
       }
 
@@ -134,10 +123,7 @@ export class MonitorService {
 
       if (scheduler) {
         await monitorQueue.removeJobScheduler(scheduler.key);
-        this.logger.log(
-          `Removed scheduler for monitor: ${id}`,
-          this.deleteMonitor.name,
-        );
+        this.logger.log(`Removed scheduler for monitor: ${id}`, this.deleteMonitor.name);
       }
 
       this.logger.log(`Monitor deleted successfully: ${id}`, this.deleteMonitor.name);
@@ -162,10 +148,7 @@ export class MonitorService {
 
   async getAllMonitorsOfUser(userId: string) {
     try {
-      this.logger.log(
-        `Fetching all monitors for user: ${userId}`,
-        this.getAllMonitorsOfUser.name,
-      );
+      this.logger.log(`Fetching all monitors for user: ${userId}`, this.getAllMonitorsOfUser.name);
       const res = await this.prisma.monitor.findMany({ where: { userId } });
       return res;
     } catch (error) {
@@ -207,9 +190,7 @@ export class MonitorService {
         throw new NotFoundException('Monitor not found');
       }
 
-      const windowStart = new Date(
-        Math.max(requestedStart.getTime(), monitor.createdAt.getTime()),
-      );
+      const windowStart = new Date(Math.max(requestedStart.getTime(), monitor.createdAt.getTime()));
 
       const windowEnd = new Date(Math.min(requestedEnd.getTime(), now.getTime()));
 
@@ -295,10 +276,7 @@ export class MonitorService {
 
       return result;
     } catch (error) {
-      this.logger.error(
-        `Failed to calculate uptime data for monitor: ${monitorId}`,
-        error,
-      );
+      this.logger.error(`Failed to calculate uptime data for monitor: ${monitorId}`, error);
       throw error;
     }
   }
@@ -340,10 +318,7 @@ export class MonitorService {
         last30days: { uptime: last30days.uptimePercentage },
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to calculate uptime summary for monitor: ${monitorId}`,
-        error,
-      );
+      this.logger.error(`Failed to calculate uptime summary for monitor: ${monitorId}`, error);
       throw error;
     }
   }

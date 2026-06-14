@@ -7,6 +7,6 @@ import { RedisModule } from 'src/redis/redis.module';
 @Module({
   imports: [RedisModule],
   controllers: [RealtimeController],
-  providers: [RealtimeStreamService, RealtimeSubscriberService]
+  providers: [RealtimeStreamService, RealtimeSubscriberService],
 })
 export class RealtimeModule {}

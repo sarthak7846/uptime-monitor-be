@@ -1,9 +1,6 @@
 import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import {
-  CreateNotificationEndpointDto,
-  CreateNotificationRuleDto,
-} from './notification.dto';
+import { CreateNotificationEndpointDto, CreateNotificationRuleDto } from './notification.dto';
 import type { AuthenticatedRequest } from 'src/types/express';
 
 @Controller('notification')
@@ -16,10 +13,7 @@ export class NotificationController {
     @Req() request: AuthenticatedRequest,
   ) {
     const userId = request.user.sub;
-    return this.notificationService.createNotificationEndpoint(
-      createDto,
-      userId,
-    );
+    return this.notificationService.createNotificationEndpoint(createDto, userId);
   }
 
   @Post('rule')
@@ -28,10 +22,7 @@ export class NotificationController {
     @Req() request: AuthenticatedRequest,
   ) {
     const userId = request.user.sub;
-    return await this.notificationService.createNotificationRule(
-      createDto,
-      userId,
-    );
+    return await this.notificationService.createNotificationRule(createDto, userId);
   }
 
   @Get('endpoints')

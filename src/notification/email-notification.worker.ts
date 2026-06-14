@@ -18,7 +18,7 @@ export class EmailNotificationWorker {
     private readonly emailService: EmailService,
   ) {}
 
-  @Cron('*/10 * * * * *')
+  // @Cron('*/10 * * * * *')
   async process() {
     this.logger.log('Finding pending notification events in outbox');
     const events = await this.prisma.notificationEventOutbox.findMany({
@@ -53,9 +53,7 @@ export class EmailNotificationWorker {
     for (const rule of rules) {
       const email = (rule?.endpoint?.config as { email?: string }).email;
       if (!email) {
-        this.logger.warn(
-          `Skipping rule ${rule.id}: EMAIL endpoint missing config.email`,
-        );
+        this.logger.warn(`Skipping rule ${rule.id}: EMAIL endpoint missing config.email`);
         continue;
       }
 
@@ -89,21 +87,15 @@ export class EmailNotificationWorker {
 
     const statusLabel = isDown ? 'Down' : 'Recovered';
     const accentColor = isDown ? '#dc2626' : '#16a34a';
-    const headline = isDown
-      ? `${monitorName} is unreachable`
-      : `${monitorName} is back online`;
+    const headline = isDown ? `${monitorName} is unreachable` : `${monitorName} is back online`;
 
     const detailRows = [
       ['Monitor', monitorName],
       ['URL', url],
       ['Status', `${previousStatus} → ${currentStatus}`],
       ['Detected at', occurredAt],
-      ...(responseTime != null
-        ? [['Response time', `${responseTime} ms`] as const]
-        : []),
-      ...(isDown && errorMessage
-        ? [['Reason', errorMessage] as const]
-        : []),
+      ...(responseTime != null ? [['Response time', `${responseTime} ms`] as const] : []),
+      ...(isDown && errorMessage ? [['Reason', errorMessage] as const] : []),
     ];
 
     const detailsHtml = detailRows
