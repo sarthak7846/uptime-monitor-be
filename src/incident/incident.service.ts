@@ -8,11 +8,26 @@ export class IncidentService {
   });
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAllIncidents() {
+  async getAllIncidents(userId: string) {
     try {
-      this.logger.log('Fetching all monitors', this.getAllIncidents.name);
-      const res = await this.prisma.incident.findMany();
-      return res;
+      this.logger.log('Fetching all incidents', this.getAllIncidents.name);
+      const res = await this.prisma.incident.findMany({
+        where: {
+          userId,
+        },
+        include: {
+          monitor: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      return res.map((inc) => ({
+        ...inc,
+        monitorName: inc.monitor.name,
+      }));
     } catch (error) {
       this.logger.error('Failed to fetch all incidents', error);
       throw error;

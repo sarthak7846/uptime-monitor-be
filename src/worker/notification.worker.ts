@@ -3,6 +3,7 @@ import { NotificationEndpoint, NotificationEventOutbox, NotificationRule } from 
 import { Worker } from 'bullmq';
 import { NotificationService } from 'src/notification/notification.service';
 import { EmailProvider } from 'src/notification/providers/email.provider';
+import { SlackNotificationProvider } from 'src/notification/providers/slack.provider';
 import { RedisService } from 'src/redis/redis.service';
 import { NotificationEvent } from 'src/shared/events/notification-event.types';
 
@@ -17,6 +18,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
     private readonly redisService: RedisService,
     private readonly notificationService: NotificationService,
     private readonly emailProvider: EmailProvider,
+    private readonly slackNotificationProvider: SlackNotificationProvider,
   ) {}
 
   onModuleInit() {
@@ -37,7 +39,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
   }
 
   private async processJob(job: { data: { outboxId: string } }) {
-    console.log('Processing notification event')
+    console.log('Processing notification event');
     const { outboxId } = job.data;
     const event = await this.notificationService.getNotificationEvent(outboxId);
     if (!event || event.status !== 'PENDING') return;
@@ -66,6 +68,8 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
 
       if (channel === 'EMAIL') {
         await this.emailProvider.handleEmailRule(rule, payload);
+      } else if (channel === 'SLACK') {
+        await this.slackNotificationProvider.send(rule, payload);
       }
     }
 

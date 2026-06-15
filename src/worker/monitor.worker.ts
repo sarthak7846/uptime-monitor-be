@@ -97,11 +97,12 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async startIncident(monitorId: string, reason?: string) {
+  private async startIncident(monitorId: string, userId: string, reason?: string) {
     console.log('Incident started', monitorId);
 
     return this.prisma.incident.create({
       data: {
+        userId,
         monitorId,
         startedAt: new Date(),
         status: 'OPEN',
@@ -242,13 +243,14 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
 
     //Incident start/resolve operation
     if (shouldStartIncident) {
-      const incident = await this.startIncident(monitorId, probeResult.reason);
+      const incident = await this.startIncident(monitorId, monitor.userId, probeResult.reason);
 
       this.redisService.pub.publish(
         `sse-update:${monitor.userId}`,
         JSON.stringify({
           type: 'incident.created',
           ...incident,
+          monitorName: monitor.name || monitor.url,
         }),
       );
 
@@ -282,6 +284,7 @@ export class MonitorWorker implements OnModuleInit, OnModuleDestroy {
           JSON.stringify({
             type: 'incident.resolved',
             ...incident,
+            monitorName: monitor.name || monitor.url,
           }),
         );
 

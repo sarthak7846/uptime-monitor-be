@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { NotificationChannel } from '@prisma/client';
 import { IsArray, IsBoolean, IsEnum, IsIn, IsObject, IsOptional, IsString } from 'class-validator';
 
@@ -26,3 +27,5 @@ export class CreateNotificationRuleDto {
   @IsOptional()
   enabled?: boolean; // defaults to true
 }
+
+export class UpdateNotificationRuleDto extends PartialType(CreateNotificationRuleDto) {}

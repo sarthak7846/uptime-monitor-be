@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { NotificationEvent } from 'src/shared/events/notification-event.types';
-import { CreateNotificationEndpointDto, CreateNotificationRuleDto } from './notification.dto';
+import {
+  CreateNotificationEndpointDto,
+  CreateNotificationRuleDto,
+  UpdateNotificationRuleDto,
+} from './notification.dto';
 import { notificationQueue } from 'src/queue/queue.config';
 import { Prisma } from '@prisma/client';
 
@@ -60,6 +64,25 @@ export class NotificationService {
         enabled: createDto.enabled ?? true,
       },
     });
+  }
+
+  async updateNotificationRule(updateDto: UpdateNotificationRuleDto, id: string, userId: string) {
+    try {
+      const res = await this.prisma.notificationRule.update({
+        where: { id, userId },
+        data: updateDto,
+      });
+
+      this.logger.log(
+        `Notification rule updated successfully: ${id}`,
+        this.updateNotificationRule.name,
+      );
+
+      return res;
+    } catch (error) {
+      this.logger.error(`Failed to update notification rule: ${id}`, error);
+      throw error;
+    }
   }
 
   async getNotificationEvent(outboxId: string) {

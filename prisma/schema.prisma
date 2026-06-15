@@ -54,6 +54,7 @@ model User {
   name                  String
   monitors              Monitor[]
   notificationEndpoints NotificationEndpoint[]
+  incidents             Incident[]
 }
 
 model Monitor {
@@ -90,12 +91,14 @@ model MonitorLog {
 model Incident {
   id            String        @id @default(uuid())
   monitorId     String
+  userId        String
   startedAt     DateTime
   endedAt       DateTime?
   status        IncidentState
   triggerReason String
 
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 }
 
 model NotificationEndpoint {
