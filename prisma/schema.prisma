@@ -55,6 +55,7 @@ model User {
   monitors              Monitor[]
   notificationEndpoints NotificationEndpoint[]
   incidents             Incident[]
+  statusPages           StatusPage[]
 }
 
 model Monitor {
@@ -70,10 +71,22 @@ model Monitor {
   createdAt            DateTime     @default(now())
 
   //RELATIONS
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  monitorLogs  MonitorLog[]
+  incidents    Incident[]
+  statusPage   StatusPage?  @relation(fields: [statusPageId], references: [id])
+  statusPageId String?
+}
+
+model StatusPage {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
   userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  monitorLogs MonitorLog[]
-  incidents   Incident[]
+  user        User      @relation(fields: [userId], references: [id])
+  monitors    Monitor[]
 }
 
 model MonitorLog {
@@ -98,7 +111,7 @@ model Incident {
   triggerReason String
 
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
 }
 
 model NotificationEndpoint {
