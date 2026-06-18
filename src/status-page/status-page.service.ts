@@ -1,8 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateStatusPageDto, UpdateStatusPageDto } from './status-page.dto';
-import { MonitorState } from '@prisma/client';
+import { Incident, Monitor, MonitorState } from '@prisma/client';
 import { StatusPageStatus } from './status-page.enum';
+import { MonitorService } from 'src/monitor/monitor.service';
 
 @Injectable()
 export class StatusPageService {
@@ -10,7 +11,10 @@ export class StatusPageService {
     timestamp: true,
   });
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly monitorService: MonitorService,
+  ) {}
 
   async createStatusPage(createDto: CreateStatusPageDto, userId: string) {
     const { monitorIds, ...rest } = createDto;
@@ -50,7 +54,13 @@ export class StatusPageService {
   async getStatusPageBySlug(slug: string) {
     const statusPage = await this.prisma.statusPage.findUnique({
       where: { slug },
-      include: { monitors: true },
+      include: {
+        monitors: {
+          include: {
+            incidents: true,
+          },
+        },
+      },
     });
 
     if (!statusPage) {
@@ -70,7 +80,28 @@ export class StatusPageService {
       overallStatus = StatusPageStatus.PARTIAL_OUTAGE;
     }
 
-    return { ...statusPage, overallStatus };
+    // Calculate 90 days uptime percentage
+    const enrichedMonitors = monitors.map((monitor) => {
+      const history = this.build90DayHistory(monitor);
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+
+      const uptime90Days = this.monitorService.calculateUptimePercentage(
+        ninetyDaysAgo,
+        new Date().toISOString(),
+        monitor.createdAt,
+        monitor.incidents,
+      );
+
+      return {
+        id: monitor.id,
+        name: monitor.name,
+        status: monitor.lastStatus,
+        uptime90Days,
+        history,
+      };
+    });
+
+    return { ...statusPage, overallStatus, monitors: enrichedMonitors };
   }
 
   async updateStatusPage(id: string, updateDto: UpdateStatusPageDto, userId: string) {
@@ -92,15 +123,6 @@ export class StatusPageService {
       if (updateDto.monitorIds) {
         await this.prisma.monitor.updateMany({
           where: {
-            statusPageId: id,
-          },
-          data: {
-            statusPageId: null,
-          },
-        });
-      } else {
-        await this.prisma.monitor.updateMany({
-          where: {
             id: {
               in: updateDto.monitorIds,
             },
@@ -108,6 +130,15 @@ export class StatusPageService {
           },
           data: {
             statusPageId: id,
+          },
+        });
+      } else {
+        await this.prisma.monitor.updateMany({
+          where: {
+            statusPageId: id,
+          },
+          data: {
+            statusPageId: null,
           },
         });
       }
@@ -134,5 +165,37 @@ export class StatusPageService {
       this.logger.error(`Failed to delete status page: ${id}`, error);
       throw error;
     }
+  }
+
+  build90DayHistory(monitor: Monitor & { incidents: Incident[] }) {
+    const history: {
+      date: string;
+      uptime: number;
+    }[] = [];
+
+    const today = new Date();
+
+    for (let i = 89; i >= 0; i--) {
+      const dayStart = new Date(today);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      dayStart.setUTCDate(dayStart.getUTCDate() - i);
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+
+      const uptime = this.monitorService.calculateUptimePercentage(
+        dayStart.toISOString(),
+        dayEnd.toISOString(),
+        monitor.createdAt,
+        monitor.incidents,
+      );
+
+      history.push({
+        date: dayStart.toISOString().split('T')[0],
+        uptime: uptime.uptimePercentage,
+      });
+    }
+
+    return history;
   }
 }

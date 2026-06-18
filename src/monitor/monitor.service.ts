@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateMonitorDto } from './create-monitor.dto';
 import { UpdateMonitorDto } from './update-monitor.dto';
 import { monitorQueue } from 'src/queue/queue.config';
+import { Incident } from '@prisma/client';
 
 @Injectable()
 export class MonitorService {
@@ -157,7 +158,12 @@ export class MonitorService {
     }
   }
 
-  async getUptimeDataOfMonitor(monitorId: string, from: string, to: string) {
+  async getUptimeDataOfMonitor(
+    monitorId: string,
+    from: string,
+    to: string,
+    monitorCreatedAt?: Date,
+  ) {
     try {
       this.logger.log(
         `Calculating uptime data for monitor: ${monitorId}`,
@@ -176,21 +182,25 @@ export class MonitorService {
         throw new BadRequestException('Invalid time window');
       }
 
-      // 1️⃣ Fetch monitor (needed for createdAt clamp)
-      const monitor = await this.prisma.monitor.findUnique({
-        where: { id: monitorId },
-        select: { createdAt: true },
-      });
+      if (!monitorCreatedAt) {
+        // 1️⃣ Fetch monitor (needed for createdAt clamp)
+        const monitor = await this.prisma.monitor.findUnique({
+          where: { id: monitorId },
+          select: { createdAt: true },
+        });
 
-      if (!monitor) {
-        this.logger.warn(
-          `Uptime data fetch failed, monitor not found: ${monitorId}`,
-          this.getUptimeDataOfMonitor.name,
-        );
-        throw new NotFoundException('Monitor not found');
+        if (!monitor) {
+          this.logger.warn(
+            `Uptime data fetch failed, monitor not found: ${monitorId}`,
+            this.getUptimeDataOfMonitor.name,
+          );
+          throw new NotFoundException('Monitor not found');
+        }
+
+        monitorCreatedAt = monitor.createdAt;
       }
 
-      const windowStart = new Date(Math.max(requestedStart.getTime(), monitor.createdAt.getTime()));
+      const windowStart = new Date(Math.max(requestedStart.getTime(), monitorCreatedAt.getTime()));
 
       const windowEnd = new Date(Math.min(requestedEnd.getTime(), now.getTime()));
 
@@ -229,45 +239,7 @@ export class MonitorService {
         },
       });
 
-      // 4️⃣ Calculate downtime using overlap clamping
-      let totalDowntimeMs = 0;
-
-      for (const incident of incidents) {
-        const incidentStart = new Date(
-          Math.max(incident.startedAt.getTime(), windowStart.getTime()),
-        );
-
-        const incidentEnd = new Date(
-          Math.min((incident.endedAt ?? now).getTime(), windowEnd.getTime()),
-        );
-
-        this.logger.debug(
-          `Incident ${incident.id} overlap: ${incidentStart.toISOString()} - ${incidentEnd.toISOString()}`,
-          this.getUptimeDataOfMonitor.name,
-        );
-
-        if (incidentEnd > incidentStart) {
-          totalDowntimeMs += incidentEnd.getTime() - incidentStart.getTime();
-        }
-      }
-
-      // 5️⃣ Calculate uptime
-      const totalWindowSizeMs = windowEnd.getTime() - windowStart.getTime();
-
-      const uptimePercentage =
-        totalWindowSizeMs === 0
-          ? 100
-          : ((totalWindowSizeMs - totalDowntimeMs) / totalWindowSizeMs) * 100;
-
-      const result = {
-        monitorId,
-        from: windowStart.toISOString(),
-        to: windowEnd.toISOString(),
-        uptimePercentage: Number(uptimePercentage.toFixed(2)),
-        totalWindowSizeMs,
-        totalDowntimeMs,
-        incidentCount: incidents.length,
-      };
+      const result = this.calculateUptimePercentage(from, to, monitorCreatedAt, incidents);
 
       this.logger.log(
         `Uptime data calculated successfully for monitor: ${monitorId}`,
@@ -279,6 +251,75 @@ export class MonitorService {
       this.logger.error(`Failed to calculate uptime data for monitor: ${monitorId}`, error);
       throw error;
     }
+  }
+
+  calculateUptimePercentage(
+    from: string,
+    to: string,
+    monitorCreatedAt: Date,
+    incidents: Incident[],
+  ) {
+    const requestedStart = new Date(from);
+    const requestedEnd = new Date(to);
+    const now = new Date();
+
+    if (requestedStart >= requestedEnd) {
+      this.logger.warn(`Invalid uptime time window`, this.calculateUptimePercentage.name);
+      throw new BadRequestException('Invalid time window');
+    }
+    const windowStart = new Date(Math.max(requestedStart.getTime(), monitorCreatedAt.getTime()));
+
+    const windowEnd = new Date(Math.min(requestedEnd.getTime(), now.getTime()));
+
+    if (windowStart >= windowEnd) {
+      return {
+        from,
+        to,
+        uptimePercentage: 100,
+        totalWindowSizeMs: 0,
+        totalDowntimeMs: 0,
+        incidentCount: 0,
+      };
+    }
+    // 4️⃣ Calculate downtime using overlap clamping
+    let totalDowntimeMs = 0;
+
+    for (const incident of incidents) {
+      const incidentStart = new Date(Math.max(incident.startedAt.getTime(), windowStart.getTime()));
+
+      const incidentEnd = new Date(
+        Math.min((incident.endedAt ?? now).getTime(), windowEnd.getTime()),
+      );
+
+      this.logger.debug(
+        `Incident ${incident.id} overlap: ${incidentStart.toISOString()} - ${incidentEnd.toISOString()}`,
+        this.getUptimeDataOfMonitor.name,
+      );
+
+      if (incidentEnd > incidentStart) {
+        totalDowntimeMs += incidentEnd.getTime() - incidentStart.getTime();
+      }
+    }
+    // 5️⃣ Calculate uptime
+    const totalWindowSizeMs = windowEnd.getTime() - windowStart.getTime();
+
+    const uptimePercentage =
+      totalWindowSizeMs === 0
+        ? 100
+        : ((totalWindowSizeMs - totalDowntimeMs) / totalWindowSizeMs) * 100;
+
+    const result = {
+      from: windowStart.toISOString(),
+      to: windowEnd.toISOString(),
+      uptimePercentage: Number(uptimePercentage.toFixed(2)),
+      // totalWindowSizeMs,
+      // totalDowntimeMs,
+      incidentCount: incidents.length,
+    };
+
+    this.logger.log(`Uptime data calculated successfully`, this.calculateUptimePercentage.name);
+
+    return result;
   }
 
   async getUptimeSummaryOfMonitor(monitorId: string) {

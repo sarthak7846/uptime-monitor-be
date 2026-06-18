@@ -4,7 +4,7 @@ import { CreateStatusPageDto, UpdateStatusPageDto } from './status-page.dto';
 import type { AuthenticatedRequest } from 'src/types/express';
 import { Public } from 'src/auth/public.decorator';
 
-@Controller('status-pages')
+@Controller('status-page')
 export class StatusPageController {
   constructor(private readonly statusPageService: StatusPageService) {}
 

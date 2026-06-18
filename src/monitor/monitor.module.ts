@@ -10,5 +10,6 @@ import { MonitorStreamService } from './monitor-stream.service';
   imports: [NotificationModule, RedisModule],
   controllers: [MonitorController],
   providers: [MonitorService, MonitorSubscriberService, MonitorStreamService],
+  exports: [MonitorService],
 })
 export class MonitorModule {}
