@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Subject } from 'rxjs';
 
 @Injectable()
 export class RealtimeStreamService {
+  private readonly logger = new Logger(RealtimeStreamService.name, {
+    timestamp: true,
+  });
   private subjects = new Map<string, Subject<unknown>>();
 
   getStream(userId: string) {
@@ -11,7 +14,7 @@ export class RealtimeStreamService {
   }
 
   emit(event: unknown, userId: string) {
-    console.log('got an event to emit', event);
+    this.logger.log(`Emitting sse event: ${JSON.stringify(event)}`);
     const subject = this.subjects.get(userId);
     if (subject) subject.next(event);
   }

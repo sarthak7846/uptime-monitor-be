@@ -15,6 +15,7 @@ import { RealtimeStreamService } from './realtime/realtime-stream.service';
 import { RealtimeSubscriberService } from './realtime/realtime-subscriber.service';
 import { RedisModule } from './redis/redis.module';
 import { StatusPageModule } from './status-page/status-page.module';
+import { WorkerModule } from './worker/worker.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { StatusPageModule } from './status-page/status-page.module';
     IncidentModule,
     RealtimeModule,
     StatusPageModule,
+    WorkerModule,
   ],
   controllers: [AppController],
   providers: [AppService, RealtimeStreamService, RealtimeSubscriberService],

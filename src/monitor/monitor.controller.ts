@@ -1,17 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Sse } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
 import { CreateMonitorDto } from './create-monitor.dto';
 import { UpdateMonitorDto } from './update-monitor.dto';
 import type { AuthenticatedRequest } from 'src/types/express';
-import { map } from 'rxjs';
-import { MonitorStreamService } from './monitor-stream.service';
 
 @Controller('monitor')
 export class MonitorController {
-  constructor(
-    private readonly monitorService: MonitorService,
-    private readonly monitorStream: MonitorStreamService,
-  ) {}
+  constructor(private readonly monitorService: MonitorService) {}
 
   @Get('/all')
   async getAllMonitors() {
@@ -67,11 +62,5 @@ export class MonitorController {
   async getUptimeSummaryOfMonitor(@Param('id') monitorId: string) {
     const res = await this.monitorService.getUptimeSummaryOfMonitor(monitorId);
     return res;
-  }
-
-  @Sse('sse/events')
-  sse(@Req() req: AuthenticatedRequest) {
-    const userId = req.user.sub;
-    return this.monitorStream.getStream(userId)?.pipe(map((data) => ({ data })));
   }
 }

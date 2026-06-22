@@ -5,4 +5,4 @@ async function bootstrap() {
   await NestFactory.createApplicationContext(WorkerModule);
 }
 
-bootstrap();
+void bootstrap();
