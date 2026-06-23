@@ -14,10 +14,11 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
     const res = await this.authService.login(loginDto);
     const token = res.access_token;
+    const isProd = process.env.NODE_ENV === 'production';
     response.cookie('token', token, {
       httpOnly: true,
-      sameSite: 'none',
-      secure: false,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
     });
     return res;
   }
