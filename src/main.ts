@@ -14,7 +14,7 @@ async function bootstrap() {
   // Global validation for each route handler
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://uptime-monitor.enginedeveloper.site'],
     credentials: true,
   });
   app.use(cookieParser());
