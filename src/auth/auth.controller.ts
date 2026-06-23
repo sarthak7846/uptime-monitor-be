@@ -15,9 +15,12 @@ export class AuthController {
     const res = await this.authService.login(loginDto);
     const token = res.access_token;
     const isProd = process.env.NODE_ENV === 'production';
+
+    console.log('isprod', isProd);
+
     response.cookie('token', token, {
       httpOnly: true,
-      secure: isProd,
+      secure: true,
       sameSite: isProd ? 'none' : 'lax',
     });
     return res;
