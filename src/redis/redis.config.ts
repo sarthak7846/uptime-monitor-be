@@ -15,6 +15,6 @@ export function getRedisConnectionOptions(configService?: ConfigService): RedisO
     port,
     password,
     maxRetriesPerRequest: null,
-    tls: {},
+    // tls: {},
   };
 }
