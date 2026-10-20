@@ -19,6 +19,12 @@ export class UserController {
     return res;
   }
 
+  @Get(':id')
+  async getUser(@Param('id') userId: string) {
+    const res = await this.userService.findOne(userId);
+    return res;
+  }
+
   @Patch(':id')
   async updateUser(@Param('id') userId: string, @Body() updateUserDto: UpdateUserDto) {
     try {

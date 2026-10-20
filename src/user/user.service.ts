@@ -12,6 +12,15 @@ export class UserService {
     return users;
   }
 
+  async findOne(userId: string) {
+    const res = await this.prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+    });
+    return res;
+  }
+
   async createUser(user: UserDto) {
     const res = await this.prisma.user.create({
       data: user,

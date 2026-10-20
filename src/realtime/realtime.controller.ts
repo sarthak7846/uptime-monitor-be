@@ -9,6 +9,9 @@ export class RealtimeController {
   @Sse('sse/events')
   sse(@Req() req: any) {
     const userId = req.user.sub;
-    return this.realtimeStreamService.getStream(userId)?.pipe(map((data) => ({ data })));
+    // return this.realtimeStreamService.getStream(userId)?.pipe(map((data) => ({ data })));
+    return this.realtimeStreamService
+      .getStream(userId)
+      ?.pipe(map((data) => ({ data: JSON.stringify(data) })));
   }
 }

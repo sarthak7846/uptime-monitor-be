@@ -100,6 +100,7 @@ export class NotificationService {
   }
 
   async getNotificationEndpoints(userId: string) {
+    console.log('userId', userId)
     const endpoints = await this.prisma.notificationEndpoint.findMany({
       where: { userId },
       include: {
@@ -110,6 +111,8 @@ export class NotificationService {
         },
       },
     });
+    console.log('endpoints', endpoints)
+
 
     return endpoints.map(({ _count, ...endpoint }) => ({
       ...endpoint,

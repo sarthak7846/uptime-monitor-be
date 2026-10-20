@@ -20,8 +20,9 @@ export class AuthController {
 
     response.cookie('token', token, {
       httpOnly: true,
-      secure: true,
+      secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
+      ...(isProd && { domain: 'uptime-monitor-be-production.up.railway.app' }),
     });
     return res;
   }
